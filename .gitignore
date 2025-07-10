@@ -1,0 +1,15 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.env
+
+# dbt build artefacts
+housing_dbt/target/
+housing_dbt/dbt_packages/
+
+# Docker volumes
+pgdata_custom/
+
+# VSCode, OS cruft
+.vscode/
+.DS_Store

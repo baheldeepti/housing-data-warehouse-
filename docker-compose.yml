@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123     # ← desired password
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"                   # host:container
+    volumes:
+      - pgdata_custom:/var/lib/postgresql/data
+      - ./pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    command: >
+      postgres -c hba_file=/etc/postgresql/pg_hba.conf
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+
+  ingester:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingester
+    container_name: data_ingester
+    volumes:
+      - .:/app
+    working_dir: /app/scripts
+    depends_on:
+      - db
+
+volumes:
+  pgdata_custom:

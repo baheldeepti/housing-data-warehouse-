@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# dbt Project: housing_dbt
+# ─────────────────────────────────────────────────────────────────────────────
+name: housing_dbt
+version: 1.0.0
+config-version: 2
+
+# Which profiles.yml entry to use
+profile: housing_dbt
+
+# Where dbt looks for code
+model-paths:    ["models"]
+analysis-paths: ["analysis"]
+seed-paths:     ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths:     ["tests"]
+macro-paths:    ["macros"]
+
+# Build artifacts
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# ─── Global model configs (can be overridden per folder) ─────────────────────
+models:
+  housing_dbt:               # <- project namespace
+    +persist_docs:           # store descriptions in information_schema
+      relation: true
+      columns:  true
+
+    # ------- Layer: STAGING --------------------------------------------------
+    staging:
+      +materialized: view    # keep raw-to-clean as lightweight views
+      +schema: staging       # puts models in <database>.staging.<model_name>
+      +tags: ["staging"]
+
+    # ------- Layer: MARTS ----------------------------------------------------
+    marts:
+      +materialized: table   # analytics-ready tables by default
+      +schema: mart
+      +tags: ["mart"]
+
+    # Add more sub-folders (e.g., intermediate) as you grow
+    # intermediate:
+    #   +materialized: ephemeral
+
+# ─── Testing & docs options (optional tweaks) ────────────────────────────────
+# tests:
+#   +store_failures: true          # keep failure rows for debugging
+# docs:
+#   generate:
+#     show: true                   # auto-open browser when dbt docs serve

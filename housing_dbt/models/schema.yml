@@ -1,0 +1,148 @@
+version: 2
+
+models:
+  # ──────────────────────────────────────────────────────────────────
+  # 1.  Staging   |  Cleaned row-level view
+  # ──────────────────────────────────────────────────────────────────
+  - name: stg_nashville_housing
+    description: |
+      Cleaned, row-level staging view for Nashville housing sales
+      (2013 – 2016). Raw strings are trimmed / upper-cased; bad rows
+      are filtered out.
+
+    columns:
+      # ── Parcel & address ─────────────────────────────────────────
+      - name: parcel_id
+        description: Unique parcel identifier from Metro Nashville.
+        tests:
+          - not_null
+          - unique:
+              config:
+                severity: warn    # duplicates warn but don’t fail
+
+      - name: property_address
+        description: Street address of the parcel.
+        tests:
+          - not_null:
+              config:
+                severity: warn    # blanks warn only
+
+      - name: land_use
+        description: Zoning / land-use category.
+        tests:
+          - accepted_values:
+              values: ["SINGLE FAMILY", "RESIDENTIAL CONDO", "DUPLEX",
+                       "TRIPLEX", "VACANT RES LAND", "COMMERCIAL", "OTHER"]
+              quote: true
+              config:
+                severity: warn
+
+      # ── Sale facts ───────────────────────────────────────────────
+      - name: sale_date
+        description: Contract / recording date of the sale.
+        tests: [not_null]
+
+      - name: sale_price
+        description: Recorded sale price in USD.
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 60_000_000
+              config:
+                tags: [quality]
+
+      - name: sold_as_vacant
+        description: "'Y' / 'N' flag supplied by assessor."
+        tests:
+          - accepted_values:
+              values: ["Y", "N"]
+              quote: true
+              config:
+                severity: warn
+
+      # ── Assessor values ──────────────────────────────────────────
+      - name: land_value
+        description: Assessed land value (USD).
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 50_000_000
+              config:
+                severity: warn
+
+      - name: building_value
+        description: Assessed building value (USD).
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 50_000_000
+              config:
+                severity: warn
+
+ 
+      # ── Physical attributes ──────────────────────────────────────
+      - name: year_built
+        description: Year the main structure was built.
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1800
+              max_value: 2025
+              config:
+                severity: warn
+
+      - name: bedrooms
+        description: Recorded number of bedrooms.
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 20
+              config:
+                severity: warn
+
+      - name: full_bath
+        description: Recorded number of full bathrooms.
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 20
+              config:
+                severity: warn
+
+  # ──────────────────────────────────────────────────────────────────
+  # 2.  Dimension tables
+  # ──────────────────────────────────────────────────────────────────
+  - name: dim_date
+    description: "Calendar dimension generated via dbt_utils.date_spine."
+    columns:
+      - name: date_id
+        description: Surrogate key YYYYMMDD.
+        tests: [not_null, unique]
+
+  - name: dim_property
+    description: "One record per parcel; static physical attributes."
+    columns:
+      - name: property_key
+        description: Surrogate md5(parcel_id). Primary key.
+        tests: [not_null, unique]
+
+  - name: dim_owner
+    description: "Distinct owner snapshots (optional SCD-1)."
+    columns:
+      - name: owner_key
+        tests: [not_null, unique]
+
+  # ──────────────────────────────────────────────────────────────────
+  # 3.  Fact tables
+  # ──────────────────────────────────────────────────────────────────
+  - name: fct_property_sale
+    description: |
+      Grain = one row per parcel sale event. Links to property,
+      owner, and date dimensions for flexible analysis.
+    columns:
+      - name: sale_price
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 60_000_000

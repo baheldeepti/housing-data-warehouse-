@@ -1,0 +1,10 @@
+FROM python:3.12
+
+WORKDIR /app/scripts
+
+RUN pip install pandas sqlalchemy psycopg2-binary
+
+COPY ./scripts /app/scripts
+
+CMD ["python", "load_to_postgres.py"]
+

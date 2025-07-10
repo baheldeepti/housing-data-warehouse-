@@ -1,0 +1,3 @@
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.3.0          # latest; supports dbt 1.3 – 1.10 :contentReference[oaicite:0]{index=0}
