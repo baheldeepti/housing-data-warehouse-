@@ -13,8 +13,7 @@
 5. [Data Model](#data-model)
 6. [Usage Examples](#usage-examples)
 7. [Contributing](#contributing)
-8. [License](#license)
-9. [Acknowledgments](#acknowledgments)
+8. [Acknowledgments](#acknowledgments)
 
 ---
 
